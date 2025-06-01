@@ -1,0 +1,9 @@
+vars,vars_name,y_axis_name
+W,W,Aggregate Variable
+X,X,Aggregate Variable
+Y,Y,Aggregate Variable
+"(True, False, False, False, False)",{X1},Variable Subset
+"(False, True, False, False, False)",{X2},Variable Subset
+"(False, False, True, False, False)",{X3},Variable Subset
+"(False, False, False, True, False)",{X4},Variable Subset
+"(False, False, False, False, True)",{X5},Variable Subset

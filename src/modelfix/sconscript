@@ -1,0 +1,292 @@
+"""
+Script for the model update experiment reported in Section 5.2 
+Table 3 of the manuscript
+
+Run targeted_model_fix_seed.ipynb and targeted_model_fix_seed_tevim.ipynb
+Copy output files to modelfix folder
+Run scons from modelfix folder
+
+"""
+import os
+
+from os.path import join
+from nestly.scons import SConsWrap
+from nestly import Nest
+from SCons.Script import Environment, Command, AddOption
+import numpy as np
+import pandas as pd
+
+Import('env')
+localenv = env.Clone()
+
+# Set up state
+nest = SConsWrap(Nest(), localenv['output'], alias_environment=localenv)
+
+NUM_JOBS = 1
+
+# TOLERANCE = [0.02,]
+TOLERANCE = [0.05,]
+MIN_PREVALENCE = 0.05
+# DO_GRID_SEARCH = ''
+DO_GRID_SEARCH = '--do-grid-search'
+NUM_BINS = [40,]
+ONE_SIDED_TEST = True
+SIGNIFICANCE_LEVEL = 0.05
+NUM_BOOTSTRAP = 10000
+NUM_WEIGHTS_COMBINED_COMPARATOR = 10
+
+SIMULATION_SETTINGS = {
+    'acs_pubcov_covariate_scaled': {
+        'train_data_file': '../data/acs_pubcov_source_train.csv',
+        'source_file': '../data/acs_pubcov_source_val.csv',
+        'target_file': '../data/acs_pubcov_target.csv',
+        'feature_names': '../data/acs_pubcov_feature_names.csv',
+        'grouping_file': '../data/acs_pubcov_feature_groupings.csv',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Cond_Cov',
+        'clip': '--do-clipping',
+        'weight': '',
+        'keep_feats_plot': '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33',
+        'combos': '+'.join([
+            '0,0,1,1,1,1,0,0,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1',
+            '1,1,0,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
+            '1,1,1,0,0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
+            '1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0',
+            '1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1',
+        ])
+    },
+    'acs_pubcov_save_scaled_nontargeted': {
+        'train_data_file': '../data/acs_pubcov_source_train.csv',
+        'source_file': '../data/acs_pubcov_source_val.csv',
+        'target_file': '../data/acs_pubcov_target.csv',
+        'feature_names': '../data/acs_pubcov_feature_names.csv',
+        'grouping_file': '../data/acs_pubcov_feature_groupings.csv',
+        'revised_mdl': 'modelfix/fullfeatures_revised_mdl_nontargeted.pkl',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Agg',
+        'clip': '--do-clipping',
+        'keep_feats_plot': '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33',
+        'combos': '+'.join([
+            '0,0,1,1,1,1,0,0,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1',
+            '1,1,0,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
+            '1,1,1,0,0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
+            '1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0',
+            '1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1',
+        ])
+    },
+    'acs_pubcov_save_scaled_tevim': {
+        'train_data_file': '../data/acs_pubcov_source_train.csv',
+        'source_file': '../data/acs_pubcov_source_val.csv',
+        'target_file': '../data/acs_pubcov_target.csv',
+        'feature_names': '../data/acs_pubcov_feature_names.csv',
+        'grouping_file': '../data/acs_pubcov_feature_groupings.csv',
+        'revised_mdl': 'modelfix/tevim_revised_mdl_targeted.pkl',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Agg',
+        'clip': '--do-clipping',
+        'keep_feats_plot': '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33',
+        'combos': '+'.join([
+            '0,0,1,1,1,1,0,0,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1',
+            '1,1,0,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
+            '1,1,1,0,0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
+            '1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0',
+            '1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1',
+        ])
+    },
+    'acs_pubcov_save_scaled': {
+        'train_data_file': '../data/acs_pubcov_source_train.csv',
+        'source_file': '../data/acs_pubcov_source_val.csv',
+        'target_file': '../data/acs_pubcov_target.csv',
+        'feature_names': '../data/acs_pubcov_feature_names.csv',
+        'grouping_file': '../data/acs_pubcov_feature_groupings.csv',
+        'revised_mdl': 'modelfix/revised_mdl_nontargeted.pkl',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Agg',
+        'clip': '--do-clipping',
+        'keep_feats_plot': '0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33',
+        'combos': '+'.join([
+            '0,0,1,1,1,1,0,0,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1',
+            '1,1,0,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
+            '1,1,1,0,0,0,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
+            '1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0',
+            '1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1',
+        ])
+    },
+}
+
+nest.add(
+    'simulation',
+    [
+        # 'acs_pubcov_covariate_scaled',
+        'acs_pubcov_save_scaled_nontargeted',
+        'acs_pubcov_save_scaled_tevim',
+        # 'acs_pubcov_save_scaled',
+    ]
+)
+
+nest.add(
+    'loss',
+    [
+        'accuracy',
+        # 'balanced_accuracy'
+    ]
+)
+
+nest.add(
+    'tolerance',
+    TOLERANCE
+)
+
+nest.add(
+    'numbins',
+    NUM_BINS
+)
+
+nest.add_aggregate('method_res_estimate', list)
+nest.add_aggregate('method_res_comparators', list)
+
+@nest.add_target_with_env(localenv)
+def get_detector_test(env, outdir, c):
+    targets = [
+        join(outdir, 'estimateJOB.txt'),
+        join(outdir, 'resultestimateJOB.csv'),
+        join(outdir, 'explainerJOB.pkl'),
+    ]
+    orig_cmd = [
+        'get_detector_test.py',
+        '--do-aggregate',
+        '--decomposition',
+        SIMULATION_SETTINGS[c['simulation']]['decomposition'],
+        '--seed-offset',
+        0,
+        '--loss',
+        c['loss'],
+        '--combos %s' % SIMULATION_SETTINGS[c['simulation']]['combos'] if 'combos' in SIMULATION_SETTINGS[c['simulation']] else '',
+        '--train-data-template',
+        SIMULATION_SETTINGS[c['simulation']]['train_data_file'],
+        '--source-data-template',
+        SIMULATION_SETTINGS[c['simulation']]['source_file'],
+        '--target-data-template',
+        SIMULATION_SETTINGS[c['simulation']]['target_file'],
+        '--grouping-data',
+        SIMULATION_SETTINGS[c['simulation']]['grouping_file'],
+        '--mdl',
+        SIMULATION_SETTINGS[c['simulation']]['revised_mdl'],
+        DO_GRID_SEARCH,
+        # '--gridsearch-poly',
+        SIMULATION_SETTINGS[c['simulation']]['clip'],
+        '--tolerance',
+        c['tolerance'],
+        '--prevalence',
+        MIN_PREVALENCE,
+        '--num-bins',
+        c['numbins'],
+        '--one-sided-test' if ONE_SIDED_TEST else '',
+        SIMULATION_SETTINGS[c['simulation']]['test_greater'],
+        '--significance-level',
+        SIGNIFICANCE_LEVEL,
+        '--num-bootstrap',
+        NUM_BOOTSTRAP,
+        '--save-detectors',
+        '--log ${TARGETS[0]}',
+        '--result-file ${TARGETS[1]}',
+        '--explainer-out-file ${TARGETS[2]}',
+    ]
+    cmd = [
+        'python run_script.py',
+        '--cluster',
+        localenv['cluster'],
+        '--target-template-file',
+        '${TARGETS[0]},${TARGETS[1]},${TARGETS[2]}',
+        '--num-jobs',
+        NUM_JOBS,
+        '--run-line="%s"' % ' '.join(map(str, orig_cmd)),
+    ]
+    c['method_res_estimate'].append(targets[1])
+    return env.Command(
+        targets,
+        [],
+        ' '.join(map(str, cmd)))
+
+# @nest.add_target_with_env(localenv)
+# def summarize(env, outdir, c):
+#     res_estimate = ','.join([join('casestudy', a) for a in c['method_res_estimate']])
+#     targets = [
+#         join(outdir, 'res_estimate.csv'),
+#         join(outdir, 'summary.csv'),
+#         join(outdir, 'coverage_agg.pdf'),
+#         join(outdir, 'coverage_detail.pdf'),
+#     ]
+#     cmd = [
+#         'python plot_simulation.py',
+#         '--result-files-estimate',
+#         res_estimate,
+#         '--num-jobs',
+#         NUM_JOBS,
+#         '--significance-level',
+#         SIGNIFICANCE_LEVEL,
+#         '--one-sided-test' if ONE_SIDED_TEST else '',
+#         '--scale-bias',
+#         '--plot-components',
+#         'test_statistic' if SIMULATION_SETTINGS[c['simulation']]['decomposition'] != "Agg" else 'agg',
+#         '--feature-names',
+#         SIMULATION_SETTINGS[c['simulation']]['feature_names'],
+#         '--csv-file-estimate ${TARGETS[0]}',
+#         '--summary-csv ${TARGETS[1]}',
+#         '--coverage-agg ${TARGETS[2]}',
+#         '--coverage-detail ${TARGETS[3]}',
+#     ]
+#     return env.Command(
+#         targets,
+#         [
+#             c['method_res_estimate'],
+#         ],
+#         ' '.join(map(str, cmd)))
+
+# @nest.add_target_with_env(localenv)
+# def get_comparator(env, outdir, c):
+#     targets = [
+#         join(outdir, 'comp_estimateJOB.txt'),
+#         join(outdir, 'comp_resultestimateJOB.csv'),
+#     ]
+#     orig_cmd = [
+#         'get_comparators.py',
+#         '--seed-offset',
+#         0,
+#         '--decomposition',
+#         SIMULATION_SETTINGS[c['simulation']]['decomposition'],
+#         '--loss',
+#         c['loss'],
+#         '--train-data-template',
+#         SIMULATION_SETTINGS[c['simulation']]['train_data_file'],
+#         '--source-data-template',
+#         SIMULATION_SETTINGS[c['simulation']]['source_file'],
+#         '--target-data-template',
+#         SIMULATION_SETTINGS[c['simulation']]['target_file'],
+#         '--grouping-data',
+#         SIMULATION_SETTINGS[c['simulation']]['grouping_file'],
+#         DO_GRID_SEARCH,
+#         '--combos %s' % SIMULATION_SETTINGS[c['simulation']]['combos'] if 'combos' in SIMULATION_SETTINGS[c['simulation']] else '',
+#         '--significance-level',
+#         SIGNIFICANCE_LEVEL,
+#         '--mdl',
+#         SIMULATION_SETTINGS[c['simulation']]['revised_mdl'],
+#         '--log ${TARGETS[0]}',
+#         '--result-file ${TARGETS[1]}',
+#     ]
+#     cmd = [
+#         'python run_script.py',
+#         '--is-short',
+#         '--cluster',
+#         localenv['cluster'],
+#         '--target-template-file',
+#         '${TARGETS[0]},${TARGETS[1]}',
+#         '--num-jobs',
+#         1,
+#         '--run-line="%s"' % ' '.join(map(str, orig_cmd)),
+#     ]
+#     c['method_res_comparators'].append(targets[1])
+#     return env.Command(
+#         targets,
+#         [],
+#         ' '.join(map(str, cmd)))

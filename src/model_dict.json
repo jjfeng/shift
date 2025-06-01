@@ -1,0 +1,14 @@
+{
+    "RandomForestClassifier": {
+        "max_depth": [2],
+        "n_estimators": [100]
+    },
+    "LogisticRegression": {
+        "max_iter": [10000]
+    },
+    "LogisticRegressionLasso": {
+        "penalty": ["l1"],
+        "solver": ["saga"],
+        "max_iter": [10000]
+    }
+}

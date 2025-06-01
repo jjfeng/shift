@@ -1,0 +1,5 @@
+var_group,vars_name,grouping,group_num
+0,Z1,covariate1,0
+1,Z2,covariate2,1
+2,Z3,covariate3,2
+3,Z4,covariate4,3

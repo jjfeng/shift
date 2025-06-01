@@ -1,0 +1,35 @@
+{
+    "MLPClassifier": {
+        "clf__hidden_layer_sizes": [[100]],
+        "clf__max_iter": [1000],
+        "clf__random_state": [1]
+    },
+    "RandomForestClassifier": {
+        "max_depth": [8],
+        "n_estimators": [200]
+    },
+    "GradientBoostingClassifier": {
+        "max_depth": [3],
+        "n_estimators": [100]
+    },
+    "LogisticRegression": {
+        "penalty": ["none"]
+    },
+    "LogisticRegressionLasso": {
+        "penalty": ["l1"],
+        "solver": ["saga"],
+        "max_iter": [10000]
+    },
+    "CatBoostClassifier" : {
+        "loss_function": ["Logloss"],
+        "eval_metric": ["AUC"],
+        "verbose": [0],
+        "random_state": [42]
+    },
+    "SGDClassifier": {
+        "loss": ["log_loss"],
+        "penalty": ["l2"],
+        "alpha": [0.000001],
+        "max_iter": [100]
+    }
+}

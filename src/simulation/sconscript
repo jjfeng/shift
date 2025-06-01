@@ -1,0 +1,482 @@
+"""
+Script for the simulations to check coverage in Section 5.1 
+Figure 3 of the manuscript
+"""
+import os
+
+from os.path import join
+from nestly.scons import SConsWrap
+from nestly import Nest
+from SCons.Script import Environment, Command, AddOption
+import numpy as np
+import pandas as pd
+
+Import('env')
+localenv = env.Clone()
+
+# Set up state
+nest = SConsWrap(Nest(), localenv['output'], alias_environment=localenv)
+
+NUM_JOBS = 20
+NUM_OBS = [500,2000,4000,]
+NUM_OBS_MDL_TRAIN = 10000
+NUM_OBS_ORACLE = NUM_OBS[-1] * 2
+
+TOLERANCE = [0.05,]
+MIN_PREVALENCE = 0.05 # 0.5
+NUM_BINS = [40,]
+ONE_SIDED_TEST = True
+SIGNIFICANCE_LEVEL = 0.05
+NUM_BOOTSTRAP = 10000
+
+SIMULATION_SETTINGS = {
+    'dim4_nonlinear_std_flip': {
+        'feature_names': 'simulation/feature_names_dim4_norm1.csv',
+        'grouping_file': 'simulation/feature_grouping_dim4_norm1.csv',
+        'source_beta': '0.8,0.5,1,0.6',
+        'target_beta': '0.2,0.5,1,0.6',
+        'x_source_mean': '0,0,0,0',
+        'x_target_mean': '0,0,0,0',
+        'x_dist': 'norm',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Cond_Outcome',
+        'mdl_type': 'LogisticRegression',
+        'nonlinear_source': True,
+        'nonlinear_target': False,
+        'combos': "+".join([
+            '0,1,1,1',
+            '1,0,1,1',
+            '1,1,0,1',
+            '1,1,1,0',
+            '0,1,0,1',
+        ])
+    },
+    'dim4_linear_std_flip_multiple_critical_moresets': {
+        'feature_names': 'simulation/feature_names_dim4_norm1.csv',
+        'grouping_file': 'simulation/feature_grouping_dim4_norm1.csv',
+        'source_beta': '0.8,0.5,1,0.6',
+        'target_beta': '0.2,0.4,1,0.6',
+        'x_source_mean': '0,0,0,0',
+        'x_target_mean': '0,0,0,0',
+        'x_dist': 'norm',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Cond_Outcome',
+        'mdl_type': 'LogisticRegression',
+        'nonlinear_source': False,
+        'nonlinear_target': False,
+        'combos': "+".join([
+            '0,1,1,1',
+            '1,0,1,1',
+            '1,1,0,1',
+            '1,1,1,0',
+            '0,0,1,1',
+        ])
+    },
+    'dim4_norm2_std_flip_nonlinear': {
+        'feature_names': 'simulation/feature_names_dim4_norm1.csv',
+        'grouping_file': 'simulation/feature_grouping_dim4_norm1.csv',
+        'source_beta': '3,1,0.5,0.1',
+        'target_beta': '3,1,0.5,0.1',
+        'x_source_mean': '1,0,0,0',
+        'x_target_mean': '0,0,0,0',
+        'x_dist': 'norm',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Cond_Cov',
+        'mdl_type': 'LogisticRegression',
+        'nonlinear_source': True,
+        'nonlinear_target': True,
+        'combos': "+".join([
+            '0,1,1,1',
+            '1,0,1,1',
+            '1,1,0,1',
+            '1,1,1,0',
+            '0,0,1,1',
+            '0,0,0,1',
+        ])
+    },
+    'dim4_norm2_std_flip_threshold_outcome_specified': {
+        'feature_names': 'simulation/feature_names_dim4_norm1.csv',
+        'grouping_file': 'simulation/feature_grouping_dim4_norm1.csv',
+        'source_beta': '2,1,0.5,0.1',
+        'target_beta': '2,1,0.5,0.1',
+        'x_source_mean': '1,0,0,0.1',
+        'x_target_mean': '0,0,0,0',
+        'x_dist': 'norm',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Cond_Cov',
+        'mdl_type': 'LogisticRegression',
+        'nonlinear_source': True,
+        'nonlinear_target': True,
+        'combos': "+".join([
+            '0,1,1,1',
+            '1,0,1,1',
+            '1,1,0,1',
+            '1,1,1,0',
+            # '0,0,1,1',
+            # '0,0,0,1',
+            '0,1,1,0',
+        ])
+    },
+    'dim4_norm2_std_flip_nonlinear_truedensityx': {
+        'feature_names': 'simulation/feature_names_dim4_norm1.csv',
+        'grouping_file': 'simulation/feature_grouping_dim4_norm1.csv',
+        'source_beta': '3,1,0.5,0.1',
+        'target_beta': '3,1,0.5,0.1',
+        'x_source_mean': '1,0,0,0.1',
+        'x_target_mean': '0,0,0,0',
+        'x_dist': 'norm',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Cond_Cov',
+        'mdl_type': 'LogisticRegression',
+        'nonlinear_source': True,
+        'nonlinear_target': True,
+        'combos': "+".join([
+            '0,1,1,1',
+            '1,0,1,1',
+            # '1,1,0,1',
+            '1,1,1,0',
+            # '0,0,1,1',
+            # '0,0,0,1',
+            '0,1,1,0',
+        ])
+    },
+    'dim3_norm2_box_truedensityx': {
+        'feature_names': 'simulation/feature_names_dim3_norm1.csv',
+        'grouping_file': 'simulation/feature_grouping_dim3_norm1.csv',
+        'source_beta': '2,1,0.5',
+        'target_beta': '2,1,0.5',
+        'x_source_mean': '0.9,0,0',
+        'x_target_mean': '0.1,0,0',
+        'x_dist': 'box',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Cond_Cov',
+        'mdl_type': 'LogisticRegression',
+        'nonlinear_source': True,
+        'nonlinear_target': True,
+        'combos': "+".join([
+            '0,1,1',
+            '1,0,1',
+            '1,1,0',
+        ])
+    },
+    'dim3_noshift_smallsearch': {
+        'feature_names': 'simulation/feature_names_dim3_norm1.csv',
+        'grouping_file': 'simulation/feature_grouping_dim3_norm1.csv',
+        'source_beta': '0.8,1,0.5',
+        'target_beta': '0.8,1,0.5',
+        'x_source_mean': '0,0,0',
+        'x_target_mean': '0,0,0',
+        'x_dist': 'norm',
+        'test_greater': '--do-test-greater',
+        'decomposition': 'Cond_Cov',
+        'mdl_type': 'LogisticRegression',
+        'nonlinear_source': False,
+        'nonlinear_target': False,
+        'combos': "+".join([
+            '1,0,0',
+            '0,1,0',
+            '0,0,1',
+        ])
+    },
+}
+
+nest.add(
+    'simulation',
+    [
+        # 'dim4_nonlinear_std_flip',
+        'dim4_linear_std_flip_multiple_critical_moresets',
+        # 'dim3_norm1_std',
+        # 'dim4_norm2_std_flip_nonlinear',
+        # 'dim4_norm2_std_flip_threshold_outcome_specified',
+        # 'dim4_norm2_std_flip_nonlinear_truedensityx',
+        # 'dim3_norm2_box_truedensityx',
+        # 'dim3_noshift_smallsearch',
+    ]
+)
+
+@nest.add_target_with_env(localenv)
+def make_source_train_data(env, outdir, c):
+    targets = [
+        join(outdir, 'source_train_dataJOB.csv'),
+        join(outdir, 'source_train_logJOB.txt'),
+    ]
+
+    orig_cmd = [
+        'generate_data.py',
+        '--x-dist',
+        SIMULATION_SETTINGS[c['simulation']]['x_dist'],
+        '--num-obs',
+        NUM_OBS_MDL_TRAIN,
+        '--seed-offset',
+        0,
+        '--x-mean',
+        SIMULATION_SETTINGS[c['simulation']]['x_source_mean'],
+        '--beta',
+        SIMULATION_SETTINGS[c['simulation']]['source_beta'],
+        '--nonlinear' if SIMULATION_SETTINGS[c['simulation']]['nonlinear_source'] else '',
+        '--out-file ${TARGETS[0]}',
+        '--log ${TARGETS[1]}',
+    ]
+    cmd = [
+        'python run_script.py',
+        '--is-short',
+        '--cluster',
+        localenv['cluster'],
+        '--target-template-file',
+        '${TARGETS[0]},${TARGETS[1]}',
+        '--num-jobs',
+        1,
+        '--run-line="%s"' % ' '.join(map(str, orig_cmd)),
+    ]
+    return env.Command(
+        targets,
+        [],
+        ' '.join(map(str, cmd)))
+
+@nest.add_target_with_env(localenv)
+def train_ml(env, outdir, c):
+    targets = [
+        join(outdir, 'mdl.pkl'),
+        join(outdir, 'log_ml.txt'),
+    ]
+    orig_cmd = [
+        'train_ml.py',
+        '--seed-offset',
+        0,
+        '--model',
+        SIMULATION_SETTINGS[c['simulation']]['mdl_type'],
+        '--data ${SOURCES[0]}',
+        '--mdl ${TARGETS[0]}',
+        '--log ${TARGETS[1]}',
+    ]
+    cmd = ['python'] + orig_cmd
+    return env.Command(
+        targets,
+        c['make_source_train_data'],
+        ' '.join(map(str, cmd)))
+
+nest.add_aggregate('source_data', dict)
+nest.add_aggregate('target_data', dict)
+nest.add_aggregate('source_data_gen', list)
+nest.add_aggregate('target_data_gen', list)
+nest.add(
+    'numobs',
+    NUM_OBS
+)
+@nest.add_target_with_env(localenv)
+def make_source_data(env, outdir, c):
+    targets = [
+        join(outdir, 'source_dataJOB.csv'),
+        join(outdir, 'sourceJOB.pkl'),
+        join(outdir, 'log_source_dataJOB.txt'),
+    ]
+    c['source_data_gen'].append(targets[1])
+    c['source_data'][c['numobs']] = targets[0]
+
+    orig_cmd = [
+        'generate_data.py',
+        '--x-dist',
+        SIMULATION_SETTINGS[c['simulation']]['x_dist'],
+        '--seed-offset',
+        1,
+        '--num-obs',
+        c['numobs'],
+        '--x-mean',
+        SIMULATION_SETTINGS[c['simulation']]['x_source_mean'],
+        '--beta',
+        SIMULATION_SETTINGS[c['simulation']]['source_beta'],
+        '--nonlinear' if SIMULATION_SETTINGS[c['simulation']]['nonlinear_source'] else '',
+        '--out-file ${TARGETS[0]}',
+        '--out-data-gen ${TARGETS[1]}',
+        '--log ${TARGETS[2]}',
+    ]
+    cmd = [
+        'python run_script.py',
+        '--is-short',
+        '--cluster',
+        localenv['cluster'],
+        '--target-template-file',
+        '${TARGETS[0]},${TARGETS[1]},${TARGETS[2]}',
+        '--num-jobs',
+        NUM_JOBS,
+        '--run-line="%s"' % ' '.join(map(str, orig_cmd)),
+    ]
+    return env.Command(
+        targets,
+        [],
+        ' '.join(map(str, cmd)))
+
+@nest.add_target_with_env(localenv)
+def make_target_data(env, outdir, c):
+    targets = [
+        join(outdir, 'target_dataJOB.csv'),
+        join(outdir, 'targetJOB.pkl'),
+        join(outdir, 'log_target_dataJOB.txt'),
+    ]
+    c['target_data_gen'].append(targets[1])
+    c['target_data'][c['numobs']] = targets[0]
+
+    orig_cmd = [
+        'generate_data.py',
+        '--seed-offset',
+        2,
+        '--x-dist',
+        SIMULATION_SETTINGS[c['simulation']]['x_dist'],
+        '--num-obs',
+        c['numobs'],
+        '--x-mean',
+        SIMULATION_SETTINGS[c['simulation']]['x_target_mean'],
+        '--beta',
+        SIMULATION_SETTINGS[c['simulation']]['target_beta'],
+        '--nonlinear' if SIMULATION_SETTINGS[c['simulation']]['nonlinear_target'] else '',
+        '--out-file ${TARGETS[0]}',
+        '--out-data-gen ${TARGETS[1]}',
+        '--log ${TARGETS[2]}',
+    ]
+    cmd = [
+        'python run_script.py',
+        '--is-short',
+        '--cluster',
+        localenv['cluster'],
+        '--target-template-file',
+        '${TARGETS[0]},${TARGETS[1]},${TARGETS[2]}',
+        '--num-jobs',
+        NUM_JOBS,
+        '--run-line="%s"' % ' '.join(map(str, orig_cmd)),
+    ]
+    return env.Command(
+        targets,
+        [],
+        ' '.join(map(str, cmd)))
+
+nest.pop('numobs')
+
+nest.add(
+    'loss',
+    [
+        'accuracy',
+        # 'balanced_accuracy'
+    ]
+)
+
+nest.add(
+    'tolerance',
+    TOLERANCE
+)
+
+nest.add(
+    'numbins',
+    NUM_BINS
+)
+
+nest.add_aggregate('method_res_estimate', list)
+
+nest.add(
+    'numobs',
+    NUM_OBS
+)
+
+@nest.add_target_with_env(localenv)
+def get_detector_test(env, outdir, c):
+    targets = [
+        join(outdir, 'estimateJOB.txt'),
+        join(outdir, 'resultestimateJOB.csv'),
+        join(outdir, 'explainerJOB.pkl'),
+    ]
+    orig_cmd = [
+        'get_detector_test.py',
+        '--do-aggregate',
+        '--decomposition',
+        SIMULATION_SETTINGS[c['simulation']]['decomposition'],
+        '--seed-offset',
+        0,
+        '--loss',
+        c['loss'],
+        '--combos %s' % SIMULATION_SETTINGS[c['simulation']]['combos'] if 'combos' in SIMULATION_SETTINGS[c['simulation']] else '',
+        '--train-data-template ${SOURCES[0]}',
+        '--source-data-template ${SOURCES[1]}',
+        '--target-data-template ${SOURCES[2]}',
+        '--source-data-generator ${SOURCES[4]}',
+        '--target-data-generator ${SOURCES[5]}',
+        '--grouping-data',
+        SIMULATION_SETTINGS[c['simulation']]['grouping_file'],
+        '--mdl ${SOURCES[3]}',
+        '--do-grid-search',
+        # '--gridsearch-poly',
+        '--tolerance',
+        c['tolerance'],
+        '--prevalence',
+        MIN_PREVALENCE,
+        '--num-bins',
+        c['numbins'],
+        '--one-sided-test' if ONE_SIDED_TEST else '',
+        SIMULATION_SETTINGS[c['simulation']]['test_greater'],
+        '--significance-level',
+        SIGNIFICANCE_LEVEL,
+        '--num-bootstrap',
+        NUM_BOOTSTRAP,
+        '--log ${TARGETS[0]}',
+        '--result-file ${TARGETS[1]}',
+        '--explainer-out-file ${TARGETS[2]}',
+    ]
+    cmd = [
+        'python run_script.py',
+        '--cluster',
+        localenv['cluster'],
+        '--target-template-file',
+        '${TARGETS[0]},${TARGETS[1]},${TARGETS[2]}',
+        '--num-jobs',
+        NUM_JOBS,
+        '--run-line="%s"' % ' '.join(map(str, orig_cmd)),
+    ]
+    c['method_res_estimate'].append(targets[1])
+    return env.Command(
+        targets,
+        [
+            c['make_source_train_data'][0],
+            c['source_data'][c['numobs']],
+            c['target_data'][c['numobs']],
+            c['train_ml'][0],
+            c['source_data_gen'][0],
+            c['target_data_gen'][0],
+        ],
+        ' '.join(map(str, cmd)))
+
+nest.pop('numobs')
+
+@nest.add_target_with_env(localenv)
+def summarize(env, outdir, c):
+    res_estimate = ','.join([join('simulation', a) for a in c['method_res_estimate']])
+    targets = [
+        join(outdir, 'res_estimate.csv'),
+        join(outdir, 'summary.csv'),
+        join(outdir, 'coverage_agg.pdf'),
+        join(outdir, 'coverage_detail.pdf'),
+    ]
+    cmd = [
+        'python plot_simulation.py',
+        '--result-files-estimate',
+        res_estimate,
+        '--num-jobs',
+        NUM_JOBS,
+        '--significance-level',
+        SIGNIFICANCE_LEVEL,
+        '--one-sided-test' if ONE_SIDED_TEST else '',
+        '--tolerance',
+        c['tolerance'],
+        '--scale-bias',
+        '--plot-components',
+        'agg,test_statistic',
+        '--feature-names',
+        SIMULATION_SETTINGS[c['simulation']]['feature_names'],
+        '--csv-file-estimate ${TARGETS[0]}',
+        '--summary-csv ${TARGETS[1]}',
+        '--coverage-agg ${TARGETS[2]}',
+        '--coverage-detail ${TARGETS[3]}',
+    ]
+    return env.Command(
+        targets,
+        [
+            c['method_res_estimate'],
+        ],
+        ' '.join(map(str, cmd)))
