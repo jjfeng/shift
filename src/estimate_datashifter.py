@@ -281,14 +281,9 @@ class DetectorTestExplainer(BaseShiftExplainer):
         """
         ## FIT models
         # Cache exp loss and odds to reuse in predict()
-        st_time = time.time()
         cached_exp_loss_odds_source_train = self.get_exp_loss_odds_detector(source_train, source_outcome_model, density_x_model, None, None)
         cached_exp_loss_odds_target_train = self.get_exp_loss_odds_detector(target_train, source_outcome_model, density_x_model, None, None)
-        logging.info("step 1 TIME %d", time.time() - st_time)
-        st_time = time.time()
         detectors_omega = self._estimate_detectors_covariate_aggregate(source_train, target_train, source_outcome_model, density_x_model, cached_exp_loss_odds_source_train, cached_exp_loss_odds_target_train)  # returns list of (detector, omega)
-        logging.info("step 2 TIME %d", time.time() - st_time)
-        st_time = time.time()
         logging.info("detectors above min prevalence %s", detectors_omega)
         
         ## EVALUATE plugin
@@ -354,7 +349,6 @@ class DetectorTestExplainer(BaseShiftExplainer):
         else:
             pvalues_correlated_features = None
         logging.info("pvalues for features in detectors %s", pvalues_correlated_features)
-        logging.info("step 3 TIME %d", time.time() - st_time)
 
         return {
             'plugin': InferenceResult(
@@ -374,10 +368,7 @@ class DetectorTestExplainer(BaseShiftExplainer):
         Test for a loss difference in a sufficiently large subgroup due to conditional outcome shift
         """
         # FIT models
-        st_time = time.time()
         detectors = self._estimate_detectors_cond_outcome_aggregate(target_train)
-        logging.info("step 1 TIME %d", time.time() - st_time)
-        st_time = time.time()
 
         # EVALUATE
         # On target
@@ -432,7 +423,6 @@ class DetectorTestExplainer(BaseShiftExplainer):
             logging.info("AGGREGATE COND OUTCOME bias of source loss %s odds %s", (source_loss - exp_loss_source_on_sourceX).mean(), odds_target_x.mean())
 
         self.agg_detectors_y = detectors
-        logging.info("step 2 TIME %d", time.time() - st_time)
 
         return {
             'plugin': InferenceResult(
@@ -547,7 +537,6 @@ class DetectorTestExplainer(BaseShiftExplainer):
     def _estimate_detectors_covariate_fixed_omega(self, source_train: DataLoader, target_train: DataLoader, omega: float, source_outcome_model, density_x_model, density_ratio_xms_model=None, anti_subgroup_mask: np.ndarray=None, cached_exp_loss_odds_source_train: np.ndarray=None, cached_exp_loss_odds_target_train: np.ndarray = None):
         """cached_exp_loss_odds_source_train: cached exp loss and odds for sourceX_train to reuse for every omega
         """
-        st_time = time.time()
         detector = DetectorCovariateShift(
             exp_loss_fn=self._compute_risk,
             odds_ratio_X_fn=self._get_density_ratio_x,
@@ -563,8 +552,6 @@ class DetectorTestExplainer(BaseShiftExplainer):
 
         # Search candidate lambdas for the lambda that minimizes detected residual
         detector.fit(source_train, self.candidate_lambdas, omega, cached_exp_loss_odds_source_train)
-        logging.info("omega fixed 1 TIME %.2f", time.time() - st_time)
-        st_time = time.time()
 
         # Evaluate found detector
         detected_residual = detector.predict(source_train, omega, cached_exp_loss_odds_source_train)  # reuse cached exp loss and odds for sourceX_train
@@ -580,13 +567,10 @@ class DetectorTestExplainer(BaseShiftExplainer):
         norm_detected_residual = np.mean(detected_residual) / weighted_prevalence_source
         # print("detected residual min lambda %s" % (detected_residual))
         print("weighted prevalence mean %s norm detected residual %s" % (prevalence_source, norm_detected_residual))
-        logging.info("omega fixed 2 TIME %.2f", time.time() - st_time)
-        st_time = time.time()
 
         # Get prevelance in target data E_1[d(x)]
         detected_target = detector.predict(target_train, omega, cached_exp_loss_odds_target_train)
         prevalence_target = np.mean(detected_target > 0)
-        logging.info("omega fixed 3 TIME %.2f", time.time() - st_time)
 
         return detector, norm_detected_residual, prevalence_source, prevalence_target
         
@@ -711,7 +695,6 @@ class DetectorTestExplainer(BaseShiftExplainer):
             _type_: _description_
         """
         logging.info("conditional covariate test")
-        st_time = time.time()
         ## FIT models
         # Initialize density model without conditioning on detections
         # Use it to get detectors and subsequently training data for the correct density and outcome models
@@ -720,13 +703,9 @@ class DetectorTestExplainer(BaseShiftExplainer):
         # Cache exp loss and odds to reuse in predict()
         cached_exp_loss_odds_source_train = self.get_exp_loss_odds_detector(source_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask)
         cached_exp_loss_odds_target_train = self.get_exp_loss_odds_detector(target_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask)
-        logging.info("STEP 1 TIME %d", time.time() - st_time)
-        st_time = time.time()
 
         detectors_omega = self._estimate_detectors_covariate_detailed(source_train, target_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask, cached_exp_loss_odds_source_train, cached_exp_loss_odds_target_train)
         logging.info("detectors above min prevalence %s", detectors_omega)
-        logging.info("STEP 2 TIME %d", time.time() - st_time)
-        st_time = time.time()
 
         ## EVALUATE plugin
         # On source train
@@ -854,8 +833,6 @@ class DetectorTestExplainer(BaseShiftExplainer):
         else:
             pvalues_correlated_features = None
         logging.info("pvalues for features in detectors %s", pvalues_correlated_features)
-        logging.info("STEP 3 TIME %d", time.time() - st_time)
-        st_time = time.time()
 
         return {
             'plugin': InferenceResult(
