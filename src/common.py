@@ -17,7 +17,6 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.metrics import precision_recall_curve
 
-from torch_two_sample import MMDStatistic
 import torch
 from scipy.spatial import distance
 
@@ -274,6 +273,7 @@ def test_mmd(X_tr, X_te, alpha=0.05):
         X_te = X_te.reshape(-1,1)
     
     # MMD with fixed bandwidth using median heuristic
+    from torch_two_sample import MMDStatistic
     mmd_test = MMDStatistic(len(X_tr), len(X_te))
 
     # torch_two_sample somehow wants the inputs to be explicitly casted to float 32.

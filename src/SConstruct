@@ -24,9 +24,9 @@ env.SConsignFile()
 
 flags = [
         # 'simulation',
-        # 'simulation_comparators',
+        'simulation_comparators',
         # 'simulation_agg',
-        'casestudy',
+        # 'casestudy',
         # 'modelfix',
 ]
 

@@ -282,9 +282,10 @@ class DetectorTestExplainer(BaseShiftExplainer):
         ## FIT models
         # Cache exp loss and odds to reuse in predict()
         cached_exp_loss_odds_source_train = self.get_exp_loss_odds_detector(source_train, source_outcome_model, density_x_model, None, None)
-        detectors_omega = self._estimate_detectors_covariate_aggregate(source_train, target_train, source_outcome_model, density_x_model, cached_exp_loss_odds_source_train)  # returns list of (detector, omega)
+        cached_exp_loss_odds_target_train = self.get_exp_loss_odds_detector(target_train, source_outcome_model, density_x_model, None, None)
+        detectors_omega = self._estimate_detectors_covariate_aggregate(source_train, target_train, source_outcome_model, density_x_model, cached_exp_loss_odds_source_train, cached_exp_loss_odds_target_train)  # returns list of (detector, omega)
         logging.info("detectors above min prevalence %s", detectors_omega)
-
+        
         ## EVALUATE plugin
         # On source
         source_loss = self.loss_func(source_test.mdl_X, source_test.Y)
@@ -497,13 +498,13 @@ class DetectorTestExplainer(BaseShiftExplainer):
         exp_loss = compute_risk(self.loss_func, mdl_X, prob)
         return exp_loss
 
-    def _estimate_detectors_covariate_detailed(self, source_train, target_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask: np.ndarray, cached_exp_loss_odds_source_train: np.ndarray):        
+    def _estimate_detectors_covariate_detailed(self, source_train, target_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask: np.ndarray, cached_exp_loss_odds_source_train: np.ndarray, cached_exp_loss_odds_target_train: np.ndarray):
         # odds_sourceXms = self._get_density_ratio_xs(self.sourceX_train, anti_subgroup_mask)
         # odds_targetXms = self._get_density_ratio_xs(self.targetX_train, anti_subgroup_mask)        
         detectors_omega = []
         for omega in self.candidate_omegas:
-            detector, detected_residual, prevalence_source, prevalence_target = self._estimate_detectors_covariate_fixed_omega(source_train, target_train, omega, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask, cached_exp_loss_odds_source_train)
-            print("omega %.3f detector lambda %.3f detected residual %.3f detection prevalence source %.3f target %.3f" % (omega, detector.min_lambda, detected_residual, prevalence_source, prevalence_target))
+            detector, detected_residual, prevalence_source, prevalence_target = self._estimate_detectors_covariate_fixed_omega(source_train, target_train, omega, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask, cached_exp_loss_odds_source_train, cached_exp_loss_odds_target_train)
+            # print("omega %.3f detector lambda %.3f detected residual %.3f detection prevalence source %.3f target %.3f" % (omega, detector.min_lambda, detected_residual, prevalence_source, prevalence_target))
             logging.info("omega %.3f detector lambda %.3f detected residual %.3f detection prevalence source %.3f target %.3f", omega, detector.min_lambda, detected_residual, prevalence_source, prevalence_target)
             # if ~np.isnan(detected_residual) and (prevalence_source >= self.min_prevalence) and (prevalence_target >= self.min_prevalence):  # optionally, threshold prevalence in target data
             # Filter when detected residual is nan which happens because of zero detections in source
@@ -533,7 +534,7 @@ class DetectorTestExplainer(BaseShiftExplainer):
             'odds_xms': odds_xms
         }
     
-    def _estimate_detectors_covariate_fixed_omega(self, source_train: DataLoader, target_train: DataLoader, omega: float, source_outcome_model, density_x_model, density_ratio_xms_model=None, anti_subgroup_mask: np.ndarray=None, cached_exp_loss_odds_source_train: np.ndarray=None):
+    def _estimate_detectors_covariate_fixed_omega(self, source_train: DataLoader, target_train: DataLoader, omega: float, source_outcome_model, density_x_model, density_ratio_xms_model=None, anti_subgroup_mask: np.ndarray=None, cached_exp_loss_odds_source_train: np.ndarray=None, cached_exp_loss_odds_target_train: np.ndarray = None):
         """cached_exp_loss_odds_source_train: cached exp loss and odds for sourceX_train to reuse for every omega
         """
         detector = DetectorCovariateShift(
@@ -561,22 +562,22 @@ class DetectorTestExplainer(BaseShiftExplainer):
         if density_ratio_xms_model is None:
             odds_ratio_sourceXms = 1
         else:
-            odds_ratio_sourceXms = get_density_ratio_from_classifier(density_ratio_xms_model.predict_proba(source_train.X[:, anti_subgroup_mask]), scale=self.domain_ratio_train, eps=self.domain_prob_cutoff)
+            odds_ratio_sourceXms = cached_exp_loss_odds_source_train['odds_xms']
         weighted_prevalence_source = np.mean((detected_residual > 0) * odds_ratio_sourceXms)
         norm_detected_residual = np.mean(detected_residual) / weighted_prevalence_source
-        print("detected residual min lambda %s" % (detected_residual))
+        # print("detected residual min lambda %s" % (detected_residual))
         print("weighted prevalence mean %s norm detected residual %s" % (prevalence_source, norm_detected_residual))
 
         # Get prevelance in target data E_1[d(x)]
-        detected_target = detector.predict(target_train, omega)
+        detected_target = detector.predict(target_train, omega, cached_exp_loss_odds_target_train)
         prevalence_target = np.mean(detected_target > 0)
 
         return detector, norm_detected_residual, prevalence_source, prevalence_target
         
-    def _estimate_detectors_covariate_aggregate(self, source_train, target_train, source_outcome_model, density_x_model, cached_exp_loss_odds_source_train: np.ndarray): 
+    def _estimate_detectors_covariate_aggregate(self, source_train, target_train, source_outcome_model, density_x_model, cached_exp_loss_odds_source_train: np.ndarray, cached_exp_loss_odds_target_train: np.ndarray): 
         detectors_omega = []
         for omega in self.candidate_omegas:
-            detector, detected_residual, prevalence_source, prevalence_target = self._estimate_detectors_covariate_fixed_omega(source_train, target_train, omega, source_outcome_model, density_x_model, None, None, cached_exp_loss_odds_source_train)
+            detector, detected_residual, prevalence_source, prevalence_target = self._estimate_detectors_covariate_fixed_omega(source_train, target_train, omega, source_outcome_model, density_x_model, None, None, cached_exp_loss_odds_source_train, cached_exp_loss_odds_target_train)
             logging.info("omega %s detector lambda %s detected residual %s detection proportion source %s target %s", omega, detector.min_lambda, detected_residual, prevalence_source, prevalence_target)
             # Threshold by prevalence of detections in source and target data
             if (prevalence_source >= self.min_prevalence) and (prevalence_target >= self.min_prevalence):
@@ -701,8 +702,9 @@ class DetectorTestExplainer(BaseShiftExplainer):
         # init_density_model_xms = None
         # Cache exp loss and odds to reuse in predict()
         cached_exp_loss_odds_source_train = self.get_exp_loss_odds_detector(source_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask)
+        cached_exp_loss_odds_target_train = self.get_exp_loss_odds_detector(target_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask)
 
-        detectors_omega = self._estimate_detectors_covariate_detailed(source_train, target_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask, cached_exp_loss_odds_source_train)
+        detectors_omega = self._estimate_detectors_covariate_detailed(source_train, target_train, source_outcome_model, density_x_model, init_density_model_xms, anti_subgroup_mask, cached_exp_loss_odds_source_train, cached_exp_loss_odds_target_train)
         logging.info("detectors above min prevalence %s", detectors_omega)
 
         ## EVALUATE plugin
@@ -966,9 +968,12 @@ class DetectorTestExplainer(BaseShiftExplainer):
             # if we already have computed these terms
             return self.agg_res_x, self.agg_res_y
         
+        st_time = time.time()
         self._prepare_nuisance_models(self.filter_independent_features)
+        logging.info("NUISANCE TIME %d", time.time() - st_time)
         
         # Run covariate test on all or correlated features
+        st_time = time.time()
         self.agg_res_x = self._test_covariate_aggregate(
             self.source_train_filter,
             self.source_test_filter, 
@@ -977,7 +982,9 @@ class DetectorTestExplainer(BaseShiftExplainer):
             self.source_outcome_filter_model,
             self.density_x_filter_model
         )
+        logging.info("aggregate covariate TIME %d", time.time() - st_time)
 
+        st_time = time.time()
         # Run outcome test on all features
         self.agg_res_y = self._test_cond_outcome_aggregate(
             self.target_train,
@@ -986,6 +993,7 @@ class DetectorTestExplainer(BaseShiftExplainer):
             self.source_outcome_model,
             self.density_x_model
         )
+        logging.info("aggregate outcome TIME %d", time.time() - st_time)
 
         logging.info(
             "AGGREGATE DECOMP loss: COVARIATE plug-in %f eif %f; OUTCOME plug-in %f eif %f",

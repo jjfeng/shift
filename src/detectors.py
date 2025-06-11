@@ -1,6 +1,7 @@
 """Detector class for covariate tests
 """
-
+import time
+import logging
 import numpy as np
 from common import get_density_ratio_from_classifier
 
