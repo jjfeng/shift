@@ -6,6 +6,8 @@
 
 SHIFT is a diagnostic framework for performance drifts in ML models. It detects the source of the drift by finding subgroups where performance differs due to covariate or outcome shifts. Outputs are a set of hypothesis test results which can guide actions to improve models.
 
+Paper: Singh, Harvineet, Fan Xia, Alexej Gossmann, Andrew Chuang, Julian C. Hong, and Jean Feng. 2025. “‘Who Experiences Large Model Decay and Why?’ A Hierarchical Framework for Diagnosing Heterogeneous Performance Drift.” In Forty-Second International Conference on Machine Learning. [https://openreview.net/forum?id=QtbyoRxyNx](paper)
+
 ## Installation instructions
 Install required packages by running `pip install -r requirements.txt`
 
