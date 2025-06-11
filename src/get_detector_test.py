@@ -1,7 +1,7 @@
 """
 Code for computing aggregate and detailed tests, both test statistics and p-values
 """
-
+import time
 import pickle
 import logging
 import argparse
@@ -219,7 +219,7 @@ def main():
         format="%(message)s", filename=args.log_file, level=logging.INFO
     )
     logging.info(args)
-    
+
     _, trainY = read_csv(args.train_data)
     trainY = trainY.to_numpy()
     sourceX, sourceY = read_csv(args.source_data)
@@ -312,7 +312,12 @@ def main():
         )
     else:
         raise NotImplementedError
+    
+    st_time = time.time()
+    
     explainer.run_tests()
+
+    logging.info("TOTAL TIME %d", time.time() - st_time)
 
     res_df = explainer.summary()
     print(res_df)
