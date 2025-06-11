@@ -115,116 +115,6 @@ SIMULATION_SETTINGS = {
             '1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1',
         ])
     },
-    'readmission_zsfg_ucsf_fixed_encounters': {
-        'train_data_file': '../data/readmission/zsfg_ucsf_fixed_encounters/zsfg_train_imputed_trim.csv',
-        'source_file': '../data/readmission/zsfg_ucsf_fixed_encounters/zsfg_source_imputed_trim.csv',
-        'target_file': '../data/readmission/zsfg_ucsf_fixed_encounters/ucsf_test_fixed_encounters_imputed_trim.csv',
-        'feature_file': '../data/readmission/zsfg_ucsf_fixed_encounters/hf_feature_groupings_filter_trim.csv',
-        'grouping_file': '../data/readmission/zsfg_ucsf_fixed_encounters/hf_feature_groupings_groups_filter_trim.csv',
-        'test_greater': '--do-test-greater',
-        'decomposition': [
-            'Agg',
-            # 'Cond_Cov',
-            # 'Cond_Outcome',
-        ],
-        'clip': '--do-clipping',
-        'weight': '',
-        'keep_feats_plot': '0,1,2',
-        'mdls': [
-            # 'RandomForestClassifier',
-            'GradientBoostingClassifier',
-            # 'MLPClassifier',
-            # 'LogisticRegressionLasso',
-        ],
-        'combos': '+'.join([
-            '0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
-            '1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0',
-            '1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
-            '1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1',
-        ])
-    },
-    'readmission_zsfg_ucsf_prior_encounters': {
-        'train_data_file': '../data/readmission/zsfg_ucsf_fixed_encounters/zsfg_train_imputed_trim.csv',
-        'source_file': '../data/readmission/zsfg_ucsf_fixed_encounters/zsfg_source_imputed_trim.csv',
-        'target_file': '../data/readmission/ucsf_test_prior_encounters_imputed_trim.csv',
-        'feature_file': '../data/readmission/zsfg_ucsf_fixed_encounters/hf_feature_groupings_filter_trim.csv',
-        'grouping_file': '../data/readmission/zsfg_ucsf_fixed_encounters/hf_feature_groupings_groups_filter_trim.csv',
-        'test_greater': '--do-test-greater',
-        'decomposition': [
-            # 'Agg',
-            'Cond_Cov',
-            'Cond_Outcome',
-        ],
-        'clip': '--do-clipping',
-        'weight': '',
-        'keep_feats_plot': '0,1,2',
-        'mdls': [
-            # 'RandomForestClassifier',
-            'GradientBoostingClassifier',
-            # 'MLPClassifier',
-            # 'LogisticRegressionLasso',
-        ],
-        'combos': '+'.join([
-            '0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
-            '1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0',
-            '1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
-            '1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1',
-        ])
-    },
-    'readmission_zsfg_ucsf_fixed_encounters_trim': {
-        'train_data_file': '../data/readmission/zsfg_ucsf_fixed_encounters/zsfg_train_imputed_ed_trim.csv',
-        'source_file': '../data/readmission/zsfg_ucsf_fixed_encounters/zsfg_source_imputed_ed_trim.csv',
-        'target_file': '../data/readmission/zsfg_ucsf_fixed_encounters/ucsf_test_fixed_encounters_imputed_ed_trim.csv',
-        'feature_file': '../data/readmission/zsfg_ucsf_fixed_encounters/hf_feature_groupings_filter_trim.csv',
-        'grouping_file': '../data/readmission/zsfg_ucsf_fixed_encounters/hf_feature_groupings_groups_filter_trim.csv',
-        'test_greater': '--do-test-greater',
-        'decomposition': [
-            # 'Agg',
-            'Cond_Cov',
-        ],
-        'clip': '--do-clipping',
-        'weight': '',
-        'keep_feats_plot': '0,1,2',
-        'mdls': [
-            # 'RandomForestClassifier',
-            'GradientBoostingClassifier',
-            # 'MLPClassifier',
-            # 'LogisticRegressionLasso',
-        ],
-        'combos': '+'.join([
-            '0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
-            '1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0',
-            '1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
-            '1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1',
-        ])
-    },
-    'readmission_zsfg_ucsf_prior_encounters_trim': {
-        'train_data_file': '../data/readmission/zsfg_ucsf_fixed_encounters/zsfg_train_imputed_ed_trim.csv',
-        'source_file': '../data/readmission/zsfg_ucsf_fixed_encounters/zsfg_source_imputed_ed_trim.csv',
-        'target_file': '../data/readmission/ucsf_test_prior_encounters_imputed_ed_trim.csv',
-        'feature_file': '../data/readmission/zsfg_ucsf_fixed_encounters/hf_feature_groupings_filter_trim.csv',
-        'grouping_file': '../data/readmission/zsfg_ucsf_fixed_encounters/hf_feature_groupings_groups_filter_trim.csv',
-        'test_greater': '--do-test-greater',
-        'decomposition': [
-            # 'Agg',
-            'Cond_Cov',
-        ],
-        'clip': '--do-clipping',
-        'weight': '',
-        'keep_feats_plot': '0,1,2',
-        'mdls': [
-            # 'RandomForestClassifier',
-            'GradientBoostingClassifier',
-            # 'MLPClassifier',
-            # 'LogisticRegressionLasso',
-        ],
-        'combos': '+'.join([
-            '0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
-            '1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0',
-            '1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1',
-            '1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1',
-        ])
-    },
     'civilcomments_male_to_female': {
         'train_data_file': '../data/civilcomments/source.csv',
         'source_file': '../data/civilcomments/val.csv',
@@ -251,12 +141,6 @@ nest.add(
         'acs_pubcov_correlate',
         # 'readmission_ucsf_zsfg_correlate',
         # 'readmission_ucsf_zsfg_fixed_encounters_correlate',
-        # 'readmission_zsfg_ucsf_fixed_encounters',
-        # 'readmission_zsfg_ucsf_prior_encounters',
-        # 'readmission_zsfg_ucsf_fixed_encounters_trim',
-        # 'readmission_zsfg_ucsf_prior_encounters_trim',
-        # 'readmission_zsfg_ucsf_outcome',
-        # 'readmission_zsfg_ucsf_covariate',
         # 'civilcomments_male_to_female',
     ]
 )
